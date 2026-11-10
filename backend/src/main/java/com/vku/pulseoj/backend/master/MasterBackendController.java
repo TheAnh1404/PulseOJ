@@ -138,6 +138,10 @@ public class MasterBackendController {
         return problemDAO.getAllProblems();
     }
 
+    public ProblemDTO getProblemById(int problemId, boolean includeHidden) {
+        return problemDAO.getProblemById(problemId, includeHidden);
+    }
+
     public ProblemDTO saveProblem(ProblemDTO problem) throws Exception {
         return problemDAO.saveProblem(problem);
     }
@@ -152,6 +156,10 @@ public class MasterBackendController {
 
     public List<SubmissionDTO> getAllSubmissions() {
         return submissionDAO.getAllSubmissions();
+    }
+
+    public SubmissionDTO getSubmissionById(int submissionId) {
+        return submissionDAO.getById(submissionId);
     }
 
     public List<ScoreboardRowDTO> getScoreboard() {

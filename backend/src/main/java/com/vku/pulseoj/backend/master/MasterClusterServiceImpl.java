@@ -117,11 +117,14 @@ public class MasterClusterServiceImpl extends UnicastRemoteObject implements IMa
     private void broadcastScoreboard() {
         try {
             List<ScoreboardRowDTO> scoreboard = masterSubmissionService.getScoreboard();
-            for (IClientCallbackService clientCb : masterSubmissionService.getAllClientCallbacks().values()) {
+            for (java.util.Map.Entry<Integer, IClientCallbackService> entry : masterSubmissionService.getAllClientCallbacks().entrySet()) {
                 try {
-                    clientCb.onScoreboardUpdated(scoreboard);
+                    entry.getValue().onScoreboardUpdated(scoreboard);
+                } catch (RemoteException re) {
+                    logger.info("Client stub for contestant #{} is disconnected. Removing dead callback.", entry.getKey());
+                    masterSubmissionService.removeClientCallback(entry.getKey());
                 } catch (Exception e) {
-                    // Ignore dead client callbacks
+                    logger.debug("Non-critical error broadcasting scoreboard to client #{}: {}", entry.getKey(), e.getMessage());
                 }
             }
         } catch (Exception e) {

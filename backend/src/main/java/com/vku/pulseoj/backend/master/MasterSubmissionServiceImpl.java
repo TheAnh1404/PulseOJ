@@ -125,4 +125,8 @@ public class MasterSubmissionServiceImpl extends UnicastRemoteObject implements 
     public void removeSubmissionCallback(int submissionId) {
         submissionCallbacks.remove(submissionId);
     }
+
+    public void removeClientCallback(int contestantId) {
+        clientCallbacks.remove(contestantId);
+    }
 }
