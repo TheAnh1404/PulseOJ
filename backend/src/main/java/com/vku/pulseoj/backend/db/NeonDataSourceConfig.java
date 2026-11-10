@@ -43,6 +43,10 @@ public class NeonDataSourceConfig {
         Dotenv dotenv = null;
         try {
             dotenv = Dotenv.configure().ignoreIfMissing().load();
+            if (dotenv.get("NEON_DB_URL") == null) {
+                // Check parent directory if running from a submodule (e.g. backend/ or frontend/)
+                dotenv = Dotenv.configure().directory("../").ignoreIfMissing().load();
+            }
         } catch (Exception e) {
             logger.debug("Dotenv file not found, checking system properties/env: {}", e.getMessage());
         }
@@ -55,11 +59,66 @@ public class NeonDataSourceConfig {
         if ("true".equalsIgnoreCase(mockFlag) || dbUrl == null || dbUrl.isBlank() || dbUrl.contains("<endpoint>")) {
             logger.warn("===============================================================================");
             logger.warn("No active NEON_DB_URL configured in .env. Running in Memory/Mock Fallback Mode.");
-            logger.warn("Set NEON_DB_URL=jdbc:postgresql://<neon-endpoint>/pulseoj?sslmode=require in .env");
+            logger.warn("Set NEON_DB_URL in .env to connect to your Neon PostgreSQL Cloud instance.");
             logger.warn("===============================================================================");
             isMockMode = true;
             isInitialized = true;
             return;
+        }
+
+        // Auto-normalize URI if provided in postgresql:// format or with embedded credentials
+        if (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://") || dbUrl.startsWith("jdbc:postgresql://")) {
+            String rawUri = dbUrl.startsWith("jdbc:") ? dbUrl.substring(5) : dbUrl;
+            try {
+                java.net.URI uri = new java.net.URI(rawUri);
+                String userInfo = uri.getUserInfo();
+                if (userInfo != null && userInfo.contains(":")) {
+                    String[] userPass = userInfo.split(":", 2);
+                    if ((dbUser == null || dbUser.isBlank()) && userPass.length > 0) {
+                        dbUser = java.net.URLDecoder.decode(userPass[0], java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    if ((dbPassword == null || dbPassword.isBlank()) && userPass.length > 1) {
+                        dbPassword = java.net.URLDecoder.decode(userPass[1], java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                }
+
+                String host = uri.getHost();
+                int port = uri.getPort() > 0 ? uri.getPort() : 5432;
+                String path = uri.getPath();
+                String query = uri.getQuery();
+
+                StringBuilder normalized = new StringBuilder("jdbc:postgresql://")
+                        .append(host)
+                        .append(":").append(port)
+                        .append(path != null && !path.isBlank() ? path : "/neondb");
+
+                // Preserve or enforce sslmode=require
+                if (query != null && !query.isBlank()) {
+                    // Filter out channel_binding if present (can cause issues with some jdbc driver versions)
+                    String[] qParams = query.split("&");
+                    StringBuilder cleanQuery = new StringBuilder();
+                    for (String qp : qParams) {
+                        if (!qp.startsWith("channel_binding=")) {
+                            if (cleanQuery.length() > 0) cleanQuery.append("&");
+                            cleanQuery.append(qp);
+                        }
+                    }
+                    if (cleanQuery.length() > 0) {
+                        normalized.append("?").append(cleanQuery);
+                    } else {
+                        normalized.append("?sslmode=require");
+                    }
+                } else {
+                    normalized.append("?sslmode=require");
+                }
+                dbUrl = normalized.toString();
+                logger.info("Normalized Neon JDBC URL: {}", dbUrl);
+            } catch (Exception ex) {
+                logger.debug("URI normalization note: {}", ex.getMessage());
+                if (!dbUrl.startsWith("jdbc:")) {
+                    dbUrl = "jdbc:" + dbUrl;
+                }
+            }
         }
 
         try {
