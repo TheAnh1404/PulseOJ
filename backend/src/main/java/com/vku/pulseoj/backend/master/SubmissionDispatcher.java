@@ -31,6 +31,7 @@ public class SubmissionDispatcher implements Runnable {
     private final Map<String, WorkerSession> activeWorkers = new ConcurrentHashMap<>();
     private final Map<Integer, SubmissionDTO> inFlightTasks = new ConcurrentHashMap<>();
     private final Map<Integer, String> taskToWorkerMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> retryCounts = new ConcurrentHashMap<>();
 
     private final ProblemDAO problemDAO;
     private final SubmissionDAO submissionDAO;
@@ -107,7 +108,9 @@ public class SubmissionDispatcher implements Runnable {
     public void updateWorkerStatus(String workerId, WorkerStatus status) {
         WorkerSession session = activeWorkers.get(workerId);
         if (session != null) {
-            session.status = status;
+            if (session.status != WorkerStatus.BUSY || status == WorkerStatus.OFFLINE) {
+                session.status = status;
+            }
             if (status == WorkerStatus.OFFLINE) {
                 handleWorkerDown(workerId);
             }
@@ -115,7 +118,18 @@ public class SubmissionDispatcher implements Runnable {
     }
 
     /**
+     * Updates worker CPU load metrics from UDP telemetry.
+     */
+    public void updateWorkerMetrics(String workerId, double cpuLoad) {
+        WorkerSession session = activeWorkers.get(workerId);
+        if (session != null) {
+            session.cpuLoad = cpuLoad;
+        }
+    }
+
+    /**
      * Fault-tolerance: Recovers tasks currently handled by a crashed/dead worker.
+     * Prevents poison pill tasks by limiting retries to 3 attempts.
      */
     public synchronized void handleWorkerDown(String workerId) {
         logger.warn("Handling failover for failed worker [{}]", workerId);
@@ -127,12 +141,26 @@ public class SubmissionDispatcher implements Runnable {
                 taskToWorkerMap.remove(submissionId);
                 SubmissionDTO task = inFlightTasks.remove(submissionId);
                 if (task != null) {
-                    logger.warn("FAILOVER TRIGGERED: Re-enqueuing in-flight submission #{} from crashed worker [{}]",
-                            submissionId, workerId);
-                    task.setVerdict(Verdict.PENDING);
-                    queue.offer(task);
-                    if (uiListener != null) {
-                        uiListener.onServerLog("FAILOVER: Re-queued submission #" + submissionId + " (Worker " + workerId + " died)");
+                    int retries = retryCounts.merge(submissionId, 1, Integer::sum);
+                    if (retries > 3) {
+                        logger.error("Poison pill detected: submission #{} exceeded max retries ({}). Marking RE.",
+                                submissionId, retries);
+                        task.setVerdict(Verdict.RE);
+                        task.setCompilerOutput("Execution aborted: Submission repeatedly crashed worker nodes (" + retries + " attempts).");
+                        submissionDAO.updateVerdict(submissionId, Verdict.RE, 0, 0, task.getCompilerOutput(), workerId);
+                        if (uiListener != null) {
+                            uiListener.onSubmissionCompleted(task);
+                            uiListener.onServerLog("FAILOVER: Submission #" + submissionId + " aborted (exceeded max retries)");
+                        }
+                    } else {
+                        logger.warn("FAILOVER TRIGGERED: Re-enqueuing in-flight submission #{} from crashed worker [{}] (attempt {})",
+                                submissionId, workerId, retries);
+                        task.setVerdict(Verdict.PENDING);
+                        task.setWorkerId(null);
+                        queue.offer(task);
+                        if (uiListener != null) {
+                            uiListener.onServerLog("FAILOVER: Re-queued submission #" + submissionId + " (Worker " + workerId + " died, retry " + retries + "/3)");
+                        }
                     }
                 }
             }
@@ -145,12 +173,30 @@ public class SubmissionDispatcher implements Runnable {
     public void onTaskCompleted(int submissionId, String workerId) {
         inFlightTasks.remove(submissionId);
         taskToWorkerMap.remove(submissionId);
+        retryCounts.remove(submissionId);
 
         WorkerSession session = activeWorkers.get(workerId);
         if (session != null) {
             session.status = WorkerStatus.IDLE;
             session.currentSubmissionId = null;
         }
+    }
+
+    /**
+     * Selects an IDLE worker with the lowest CPU load.
+     */
+    public WorkerSession pickBestIdleWorker() {
+        WorkerSession best = null;
+        double minCpu = Double.MAX_VALUE;
+        for (WorkerSession worker : activeWorkers.values()) {
+            if (worker.status == WorkerStatus.IDLE) {
+                if (best == null || worker.cpuLoad < minCpu) {
+                    best = worker;
+                    minCpu = worker.cpuLoad;
+                }
+            }
+        }
+        return best;
     }
 
     @Override
@@ -160,19 +206,12 @@ public class SubmissionDispatcher implements Runnable {
                 // Block until a submission is in the queue
                 SubmissionDTO submission = queue.take();
 
-                // Find an idle worker
+                // Find an idle worker with lowest CPU
                 WorkerSession targetWorker = null;
                 while (running.get() && targetWorker == null) {
-                    for (WorkerSession worker : activeWorkers.values()) {
-                        if (worker.status == WorkerStatus.IDLE) {
-                            targetWorker = worker;
-                            break;
-                        }
-                    }
-
+                    targetWorker = pickBestIdleWorker();
                     if (targetWorker == null) {
-                        // No idle workers available, wait briefly
-                        Thread.sleep(500);
+                        Thread.sleep(300);
                     }
                 }
 
@@ -191,8 +230,8 @@ public class SubmissionDispatcher implements Runnable {
                 ProblemDTO problem = problemDAO.getProblemById(submission.getProblemId(), true);
                 List<TestCaseDTO> testCases = problem != null ? problem.getTestCases() : List.of();
 
-                logger.info("Dispatching submission #{} (problem {}) to worker [{}]",
-                        submission.getId(), submission.getProblemCode(), targetWorker.workerId);
+                logger.info("Dispatching submission #{} (problem {}) to worker [{}] (CPU: {}%)",
+                        submission.getId(), submission.getProblemCode(), targetWorker.workerId, targetWorker.cpuLoad);
 
                 if (uiListener != null) {
                     uiListener.onSubmissionDispatched(submission.getId(), targetWorker.workerId);
@@ -231,6 +270,7 @@ public class SubmissionDispatcher implements Runnable {
         public final IJudgeWorkerService stub;
         public volatile WorkerStatus status = WorkerStatus.IDLE;
         public volatile Integer currentSubmissionId = null;
+        public volatile double cpuLoad = 0.0;
 
         public WorkerSession(String workerId, String host, int port, IJudgeWorkerService stub) {
             this.workerId = workerId;

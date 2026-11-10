@@ -88,6 +88,10 @@ public class UdpHeartbeatWatchdog implements Runnable {
                         metrics.setLastHeartbeatTimestamp(System.currentTimeMillis());
                         latestMetrics.put(metrics.getWorkerId(), metrics);
 
+                        if (dispatcher != null) {
+                            dispatcher.updateWorkerMetrics(metrics.getWorkerId(), metrics.getCpuLoadPercent());
+                        }
+
                         if (monitorListener != null) {
                             monitorListener.onWorkerMetricsReceived(metrics);
                             monitorListener.onPacketLogged(new NetworkPacketLogDTO(
