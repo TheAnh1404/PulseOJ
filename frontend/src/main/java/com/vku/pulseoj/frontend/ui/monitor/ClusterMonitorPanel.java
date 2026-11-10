@@ -42,16 +42,20 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
     public ClusterMonitorPanel(MasterBackendController controller) {
         this.controller = controller;
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        cardsContainer.setBackground(new Color(248, 250, 252));
 
         // 1. Top Header & Stress Test bar
-        JPanel headerPanel = new JPanel(new MigLayout("insets 10, gap 15", "[grow][]", "[]"));
-        lblClusterStats.setFont(lblClusterStats.getFont().deriveFont(Font.BOLD, 14f));
+        JPanel headerPanel = new JPanel(new MigLayout("insets 4 8 8 8, gap 15", "[grow][]", "[]"));
+        lblClusterStats.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblClusterStats.setForeground(new Color(30, 41, 59));
         headerPanel.add(lblClusterStats, "align left");
 
-        btnStressTest.setFont(btnStressTest.getFont().deriveFont(Font.BOLD));
-        btnStressTest.setBackground(new Color(155, 89, 182));
+        btnStressTest.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnStressTest.setBackground(new Color(124, 58, 237)); // Purple
         btnStressTest.setForeground(Color.WHITE);
+        btnStressTest.setText("⚡ Thử Nghiệm Bắn Tải (20 Bài Nộp Đồng Thời)");
         btnStressTest.addActionListener(e -> runDistributedStressTest());
         headerPanel.add(btnStressTest, "align right");
 
@@ -59,7 +63,8 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
 
         // 2. Center: Split Pane (Top: Worker Cards; Bottom: Network Inspector)
         JScrollPane cardsScroll = new JScrollPane(cardsContainer);
-        cardsScroll.setBorder(BorderFactory.createTitledBorder("Live Worker Health Cards (UDP Telemetry 8889)"));
+        cardsScroll.setBorder(BorderFactory.createTitledBorder("Thẻ Trạng Thái Cụm Máy Chấm (UDP Telemetry :8889)"));
+        cardsScroll.getViewport().setBackground(new Color(248, 250, 252));
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, cardsScroll, inspectorPanel);
         split.setResizeWeight(0.45);

@@ -54,24 +54,74 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
 
         // Main Tabbed Interface
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(tabbedPane.getFont().deriveFont(Font.BOLD, 13f));
-        tabbedPane.addTab("[TV1] Contestant Accounts (Neon DB)", contestantPanel);
-        tabbedPane.addTab("[TV1] Problems & Test Cases", problemPanel);
-        tabbedPane.addTab("[TV1] Live Submission Queue", queuePanel);
-        tabbedPane.addTab("[TV4] Cluster Health & UDP Inspector", clusterMonitorPanel);
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tabbedPane.addTab("👥 Thí sinh (Neon DB)", contestantPanel);
+        tabbedPane.addTab("📚 Đề bài & Test Cases", problemPanel);
+        tabbedPane.addTab("⏱️ Hàng đợi Chấm bài (Live Queue)", queuePanel);
+        tabbedPane.addTab("📡 Giám sát Cụm & UDP", clusterMonitorPanel);
+
+        // Top Header Banner (Modern & Bright)
+        JPanel headerBanner = new JPanel(new MigLayout("insets 12 18 12 18, fillx", "[grow][]", "[]"));
+        headerBanner.setBackground(Color.WHITE);
+        headerBanner.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)));
+
+        JPanel titleBlock = new JPanel(new MigLayout("insets 0, gap 2", "[]", "[][]"));
+        titleBlock.setBackground(Color.WHITE);
+        JLabel lblAppTitle = new JLabel("⚡ PULSE OJ — MASTER SERVER");
+        lblAppTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblAppTitle.setForeground(new Color(15, 23, 42)); // Deep Slate
+
+        JLabel lblAppSubtitle = new JLabel("Bảng Điều Khiển Giáo Viên • Neon Cloud Database • Hệ Thống Chấm Phân Tán");
+        lblAppSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblAppSubtitle.setForeground(new Color(100, 116, 139)); // Slate-500
+
+        titleBlock.add(lblAppTitle, "wrap");
+        titleBlock.add(lblAppSubtitle);
+        headerBanner.add(titleBlock, "align left");
+
+        // Status Chips Block
+        JPanel chipsPanel = new JPanel(new MigLayout("insets 0, gap 10", "[][]", "[]"));
+        chipsPanel.setBackground(Color.WHITE);
+
+        lblServerStatus.setOpaque(true);
+        lblServerStatus.setBackground(new Color(241, 245, 249));
+        lblServerStatus.setForeground(new Color(51, 65, 85));
+        lblServerStatus.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225), 1),
+                BorderFactory.createEmptyBorder(6, 12, 6, 12)
+        ));
+        lblServerStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        lblDbStatus.setOpaque(true);
+        lblDbStatus.setBackground(new Color(254, 243, 199));
+        lblDbStatus.setForeground(new Color(146, 64, 14));
+        lblDbStatus.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(253, 230, 138), 1),
+                BorderFactory.createEmptyBorder(6, 12, 6, 12)
+        ));
+        lblDbStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        chipsPanel.add(lblServerStatus);
+        chipsPanel.add(lblDbStatus);
+        headerBanner.add(chipsPanel, "align right");
 
         setLayout(new BorderLayout());
+        add(headerBanner, BorderLayout.NORTH);
         add(tabbedPane, BorderLayout.CENTER);
 
         // Status Bar (South)
-        JPanel statusBar = new JPanel(new MigLayout("insets 5 10 5 10, fillx", "[][][grow]", "[]"));
-        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(50, 50, 50)));
+        JPanel statusBar = new JPanel(new MigLayout("insets 6 16 6 16, fillx", "[][grow]", "[]"));
+        statusBar.setBackground(new Color(248, 250, 252));
+        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
 
-        lblServerStatus.setFont(lblServerStatus.getFont().deriveFont(Font.BOLD, 12f));
-        statusBar.add(lblServerStatus);
-        statusBar.add(lblDbStatus);
-        lblRecentEvent.setForeground(Color.GRAY);
-        statusBar.add(lblRecentEvent, "align right");
+        JLabel lblSystemTag = new JLabel("● TRẠNG THÁI HỆ THỐNG:");
+        lblSystemTag.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblSystemTag.setForeground(new Color(100, 116, 139));
+        statusBar.add(lblSystemTag);
+
+        lblRecentEvent.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblRecentEvent.setForeground(new Color(30, 41, 59));
+        statusBar.add(lblRecentEvent, "align left");
 
         add(statusBar, BorderLayout.SOUTH);
 
@@ -85,22 +135,38 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
                 controller.startServer(1099, this, clusterMonitorPanel);
 
                 SwingUtilities.invokeLater(() -> {
-                    lblServerStatus.setText(String.format("Master RMI: %s:%d | UDP Discovery: 8888 | Heartbeat: 8889",
+                    lblServerStatus.setText(String.format("🟢 Master RMI: %s:%d | UDP: 8888/8889",
                             controller.getServerIp(), controller.getRmiPort()));
-                    lblServerStatus.setForeground(new Color(46, 204, 113));
+                    lblServerStatus.setBackground(new Color(236, 253, 245));
+                    lblServerStatus.setForeground(new Color(5, 150, 105));
+                    lblServerStatus.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(167, 243, 208), 1),
+                            BorderFactory.createEmptyBorder(6, 12, 6, 12)
+                    ));
 
                     if (NeonDataSourceConfig.isMockMode()) {
-                        lblDbStatus.setText("[Neon DB: OFFLINE MOCK MODE - Seed data loaded]");
-                        lblDbStatus.setForeground(new Color(243, 156, 18));
+                        lblDbStatus.setText("⚠️ Neon DB: MOCK MODE");
+                        lblDbStatus.setBackground(new Color(254, 243, 199));
+                        lblDbStatus.setForeground(new Color(180, 83, 9));
+                        lblDbStatus.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(new Color(253, 230, 138), 1),
+                                BorderFactory.createEmptyBorder(6, 12, 6, 12)
+                        ));
                     } else {
-                        lblDbStatus.setText("[Neon DB: CONNECTED SSL]");
-                        lblDbStatus.setForeground(new Color(46, 204, 113));
+                        lblDbStatus.setText("☁️ Neon DB: CONNECTED SSL");
+                        lblDbStatus.setBackground(new Color(239, 246, 255));
+                        lblDbStatus.setForeground(new Color(29, 78, 216));
+                        lblDbStatus.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(new Color(191, 219, 254), 1),
+                                BorderFactory.createEmptyBorder(6, 12, 6, 12)
+                        ));
                     }
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
-                    lblServerStatus.setText("Server Start Failed: " + e.getMessage());
-                    lblServerStatus.setForeground(new Color(231, 76, 60));
+                    lblServerStatus.setText("🔴 Server Start Failed: " + e.getMessage());
+                    lblServerStatus.setBackground(new Color(254, 242, 242));
+                    lblServerStatus.setForeground(new Color(220, 38, 38));
                     JOptionPane.showMessageDialog(this,
                             "Failed to start Master Server: " + e.getMessage(),
                             "Server Error", JOptionPane.ERROR_MESSAGE);

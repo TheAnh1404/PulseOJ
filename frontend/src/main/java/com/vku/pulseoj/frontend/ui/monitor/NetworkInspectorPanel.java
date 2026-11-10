@@ -13,6 +13,7 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.util.LinkedList;
 
 /**
@@ -33,16 +34,16 @@ public class NetworkInspectorPanel extends JPanel {
 
     public NetworkInspectorPanel() {
         setLayout(new BorderLayout(5, 5));
-        setBorder(BorderFactory.createTitledBorder("Network Packet Inspector & UDP Telemetry Stream"));
+        setBorder(BorderFactory.createTitledBorder("Nhật Ký Gói Tin Mạng & UDP Telemetry Inspector"));
 
         // Table
-        String[] cols = {"Time", "Protocol", "Source", "Destination", "Bytes", "Summary", "Payload Content"};
+        String[] cols = {"Thời Gian", "Giao Thức", "Nguồn (Src)", "Đích (Dst)", "Bytes", "Tóm Tắt", "Nội Dung Payload"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(22);
+        table.setRowHeight(26);
         table.getColumnModel().getColumn(0).setPreferredWidth(85);
         table.getColumnModel().getColumn(1).setPreferredWidth(110);
         table.getColumnModel().getColumn(2).setPreferredWidth(130);
@@ -52,12 +53,15 @@ public class NetworkInspectorPanel extends JPanel {
         table.getColumnModel().getColumn(6).setPreferredWidth(300);
 
         // Toolbar
-        JPanel toolbar = new JPanel(new MigLayout("insets 5, gap 10"));
+        JPanel toolbar = new JPanel(new MigLayout("insets 4 8 4 8, gap 10"));
+        toolbar.setBackground(new Color(248, 250, 252));
         toolbar.add(lblPacketCount);
         toolbar.add(chkAutoScroll);
         toolbar.add(chkPause);
 
-        JButton btnClear = new JButton("Clear Logs");
+        JButton btnClear = new JButton("🗑️ Xóa Nhật Ký");
+        btnClear.setBackground(new Color(241, 245, 249));
+        btnClear.setForeground(new Color(51, 65, 85));
         btnClear.addActionListener(e -> {
             tableModel.setRowCount(0);
             packetBuffer.clear();
@@ -66,7 +70,9 @@ public class NetworkInspectorPanel extends JPanel {
         toolbar.add(btnClear);
         add(toolbar, BorderLayout.NORTH);
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     public void logPacket(NetworkPacketLogDTO pkt) {

@@ -1,6 +1,6 @@
 package com.vku.pulseoj.frontend;
 
-import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import com.vku.pulseoj.backend.client.ClientBackendController;
 import com.vku.pulseoj.frontend.ui.client.ClientMainFrame;
 import com.vku.pulseoj.frontend.ui.client.LanDiscoveryLoginDialog;
@@ -12,16 +12,16 @@ import javax.swing.UIManager;
 
 /**
  * [TV3] Contestant Client Application Entry Point.
- * Launches the Contestant Workspace with FlatDarkLaf theme.
+ * Launches the Contestant Workspace with FlatLightLaf theme.
  */
 public class ClientAppLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientAppLauncher.class);
 
     public static void main(String[] args) {
-        // 1. Initialize Modern FlatDarkLaf Theme
+        // 1. Initialize Modern FlatLightLaf Theme
         try {
-            FlatDarkLaf.setup();
+            FlatLightLaf.setup();
             UIManager.put("Button.arc", 8);
             UIManager.put("Component.arc", 8);
             UIManager.put("ProgressBar.arc", 8);

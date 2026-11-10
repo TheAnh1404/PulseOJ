@@ -19,9 +19,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,61 +44,94 @@ public class ProblemManagementPanel extends JPanel {
     private final JTable testCasesTable;
 
     private final JTextArea txtDescription = new JTextArea();
-    private final JLabel lblProblemDetails = new JLabel("Select a problem to view details");
+    private final JLabel lblProblemDetails = new JLabel("Chọn một đề bài từ danh sách bên trái để xem chi tiết");
 
-    private final JButton btnNewProblem = new JButton("Create New Problem");
-    private final JButton btnAddTestCase = new JButton("Add Test Case to Selected");
-    private final JButton btnRefresh = new JButton("Refresh");
+    private final JButton btnNewProblem = new JButton("➕ Tạo Đề Bài Mới");
+    private final JButton btnAddTestCase = new JButton("➕ Thêm Test Case");
+    private final JButton btnRefresh = new JButton("🔄 Làm Mới");
 
     private ProblemDTO currentSelectedProblem;
 
     public ProblemManagementPanel(MasterBackendController controller) {
         this.controller = controller;
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
         // 1. Problems Table (Left)
-        String[] problemCols = {"ID", "Code", "Title", "TL (ms)", "ML (MB)"};
+        String[] problemCols = {"ID", "Mã", "Tên Đề Bài", "TL (ms)", "ML (MB)"};
         problemsModel = new DefaultTableModel(problemCols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) { return false; }
         };
         problemsTable = new JTable(problemsModel);
         problemsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        problemsTable.setRowHeight(24);
+        problemsTable.setRowHeight(30);
 
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
-        leftPanel.setBorder(BorderFactory.createTitledBorder("Problem Repository"));
-        leftPanel.add(new JScrollPane(problemsTable), BorderLayout.CENTER);
-        leftPanel.setPreferredSize(new Dimension(380, 500));
+        leftPanel.setBorder(BorderFactory.createTitledBorder("Danh Sách Đề Bài Kỳ Thi"));
+        JScrollPane leftScroll = new JScrollPane(problemsTable);
+        leftScroll.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        leftPanel.add(leftScroll, BorderLayout.CENTER);
+        leftPanel.setPreferredSize(new Dimension(420, 500));
 
         // 2. Right Panel (Problem details & Test Cases)
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
-        rightPanel.setBorder(BorderFactory.createTitledBorder("Problem Details & Test Cases"));
+        rightPanel.setBorder(BorderFactory.createTitledBorder("Nội Dung Chi Tiết Đề Bài & Bộ Test"));
 
         // Description view
+        lblProblemDetails.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblProblemDetails.setForeground(new Color(15, 23, 42));
+        lblProblemDetails.setBorder(BorderFactory.createEmptyBorder(6, 6, 8, 6));
+
         txtDescription.setEditable(false);
         txtDescription.setLineWrap(true);
         txtDescription.setWrapStyleWord(true);
+        txtDescription.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtDescription.setBackground(new Color(248, 250, 252));
+        txtDescription.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
         JScrollPane descScroll = new JScrollPane(txtDescription);
-        descScroll.setPreferredSize(new Dimension(400, 150));
+        descScroll.setPreferredSize(new Dimension(400, 160));
+        descScroll.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
 
         JPanel detailHeader = new JPanel(new BorderLayout());
         detailHeader.add(lblProblemDetails, BorderLayout.NORTH);
         detailHeader.add(descScroll, BorderLayout.CENTER);
 
         // Test Cases Table
-        String[] testCols = {"#", "Sample?", "Input Snippet", "Expected Output Snippet"};
+        String[] testCols = {"Thứ Tự", "Loại Test", "Dữ Liệu Input (Mẫu)", "Kết Quả Output Mong Muốn"};
         testCasesModel = new DefaultTableModel(testCols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) { return false; }
         };
         testCasesTable = new JTable(testCasesModel);
-        testCasesTable.setRowHeight(22);
+        testCasesTable.setRowHeight(28);
+
+        // Test Case Type Renderer
+        testCasesTable.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null && !isSelected) {
+                    String str = value.toString();
+                    if (str.contains("YES") || str.contains("MẪU")) {
+                        c.setForeground(new Color(3, 105, 161)); // Blue
+                        c.setBackground(new Color(224, 242, 254)); // Soft blue
+                    } else {
+                        c.setForeground(new Color(180, 83, 9)); // Amber
+                        c.setBackground(new Color(254, 243, 199)); // Soft amber
+                    }
+                    c.setFont(c.getFont().deriveFont(Font.BOLD, 11f));
+                }
+                return c;
+            }
+        });
 
         JPanel testCasesPanel = new JPanel(new BorderLayout());
-        testCasesPanel.setBorder(BorderFactory.createTitledBorder("Test Cases (Hidden & Sample)"));
-        testCasesPanel.add(new JScrollPane(testCasesTable), BorderLayout.CENTER);
+        testCasesPanel.setBorder(BorderFactory.createTitledBorder("Bộ Test Cases (Test Mẫu Công Khai & Test Ẩn Master/Worker)"));
+        JScrollPane testScroll = new JScrollPane(testCasesTable);
+        testScroll.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        testCasesPanel.add(testScroll, BorderLayout.CENTER);
 
         JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, detailHeader, testCasesPanel);
         rightSplit.setResizeWeight(0.4);
@@ -106,7 +143,19 @@ public class ProblemManagementPanel extends JPanel {
         add(mainSplit, BorderLayout.CENTER);
 
         // 3. Bottom Toolbar
-        JPanel bottomBar = new JPanel(new MigLayout("insets 5, gap 10"));
+        JPanel bottomBar = new JPanel(new MigLayout("insets 8 4 4 4, gap 10"));
+
+        btnNewProblem.setBackground(new Color(37, 99, 235));
+        btnNewProblem.setForeground(Color.WHITE);
+        btnNewProblem.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        btnAddTestCase.setBackground(new Color(5, 150, 105));
+        btnAddTestCase.setForeground(Color.WHITE);
+        btnAddTestCase.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        btnRefresh.setBackground(new Color(241, 245, 249));
+        btnRefresh.setForeground(new Color(51, 65, 85));
+
         bottomBar.add(btnNewProblem);
         bottomBar.add(btnAddTestCase);
         bottomBar.add(btnRefresh);
@@ -147,15 +196,26 @@ public class ProblemManagementPanel extends JPanel {
 
         int id = (int) problemsModel.getValueAt(row, 0);
         CompletableFuture.runAsync(() -> {
-            List<TestCaseDTO> tests = controller.getTestCases(id, true);
+            ProblemDTO fullProblem = controller.getProblemById(id, true);
+            List<TestCaseDTO> tests = (fullProblem != null && fullProblem.getTestCases() != null)
+                    ? fullProblem.getTestCases()
+                    : controller.getTestCases(id, true);
+
             SwingUtilities.invokeLater(() -> {
                 String code = (String) problemsModel.getValueAt(row, 1);
                 String title = (String) problemsModel.getValueAt(row, 2);
                 int tl = (int) problemsModel.getValueAt(row, 3);
                 int ml = (int) problemsModel.getValueAt(row, 4);
 
-                currentSelectedProblem = new ProblemDTO(id, code, title, "", tl, ml);
+                currentSelectedProblem = (fullProblem != null) ? fullProblem : new ProblemDTO(id, code, title, "", tl, ml);
                 lblProblemDetails.setText(String.format("[%s] %s | Time: %d ms | Mem: %d MB", code, title, tl, ml));
+
+                if (fullProblem != null && fullProblem.getDescription() != null) {
+                    txtDescription.setText(fullProblem.getDescription());
+                } else {
+                    txtDescription.setText("No description available.");
+                }
+                txtDescription.setCaretPosition(0);
 
                 testCasesModel.setRowCount(0);
                 for (TestCaseDTO tc : tests) {

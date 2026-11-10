@@ -14,10 +14,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,21 +32,29 @@ public class ContestantManagementPanel extends JPanel {
     private final MasterBackendController controller;
     private final DefaultTableModel tableModel;
     private final JTable table;
+    private final JLabel lblStats = new JLabel("Tổng số thí sinh: 0 | Đang hoạt động: 0 | Bị khóa: 0");
 
     private final JTextField txtUsername = new JTextField(15);
     private final JPasswordField txtPassword = new JPasswordField(15);
     private final JTextField txtFullName = new JTextField(15);
-    private final JButton btnCreate = new JButton("Create Account");
-    private final JButton btnToggleLock = new JButton("Toggle Lock");
-    private final JButton btnRefresh = new JButton("Refresh");
+    private final JButton btnCreate = new JButton("➕ Tạo Tài Khoản Thí Sinh");
+    private final JButton btnToggleLock = new JButton("🔒 Khóa / Mở Khóa");
+    private final JButton btnRefresh = new JButton("🔄 Làm Mới Danh Sách");
 
     public ContestantManagementPanel(MasterBackendController controller) {
         this.controller = controller;
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        // Top Summary Bar
+        JPanel topBar = new JPanel(new MigLayout("insets 4 8 8 8, fillx", "[grow][]", "[]"));
+        lblStats.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblStats.setForeground(new Color(51, 65, 85));
+        topBar.add(lblStats, "align left");
+        add(topBar, BorderLayout.NORTH);
 
         // 1. Table
-        String[] columns = {"ID", "Username", "Full Name", "Status", "Registered At"};
+        String[] columns = {"ID", "Tên Đăng Nhập", "Họ và Tên", "Trạng Thái", "Ngày Tạo"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -52,23 +62,61 @@ public class ContestantManagementPanel extends JPanel {
             }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(26);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        table.setRowHeight(30);
+
+        // Status Column Renderer with soft colored pills
+        table.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value != null && !isSelected) {
+                    String status = value.toString();
+                    if ("ACTIVE".equalsIgnoreCase(status) || "HOẠT ĐỘNG".equalsIgnoreCase(status)) {
+                        c.setForeground(new Color(22, 101, 52)); // Deep green
+                        c.setBackground(new Color(220, 252, 231)); // Soft green
+                    } else {
+                        c.setForeground(new Color(153, 27, 27)); // Deep red
+                        c.setBackground(new Color(254, 226, 226)); // Soft red
+                    }
+                    c.setFont(c.getFont().deriveFont(Font.BOLD, 12f));
+                }
+                return c;
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        add(scrollPane, BorderLayout.CENTER);
 
         // 2. Bottom Input Panel for adding contestants
-        JPanel bottomPanel = new JPanel(new MigLayout("insets 10, gap 10", "[][grow][][grow][][grow][]", "[]"));
-        bottomPanel.setBorder(BorderFactory.createTitledBorder("Register New Contestant (Saved to Neon Cloud)"));
+        JPanel bottomPanel = new JPanel(new MigLayout("insets 12 16 12 16, gap 10", "[][grow][][grow][][grow][]", "[]"));
+        bottomPanel.setBackground(new Color(248, 250, 252));
+        bottomPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Đăng Ký Thí Sinh Mới (Lưu Bền Vững Vào Neon Cloud PostgreSQL)"),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)
+        ));
 
-        bottomPanel.add(new JLabel("Username:"));
+        bottomPanel.add(new JLabel("Tên đăng nhập:"));
         bottomPanel.add(txtUsername, "growx");
-        bottomPanel.add(new JLabel("Password:"));
+        bottomPanel.add(new JLabel("Mật khẩu:"));
         bottomPanel.add(txtPassword, "growx");
-        bottomPanel.add(new JLabel("Full Name:"));
+        bottomPanel.add(new JLabel("Họ tên:"));
         bottomPanel.add(txtFullName, "growx");
+
+        btnCreate.setBackground(new Color(37, 99, 235)); // Vibrant blue
+        btnCreate.setForeground(Color.WHITE);
+        btnCreate.setFont(new Font("Segoe UI", Font.BOLD, 12));
         bottomPanel.add(btnCreate, "wrap");
 
         // Action toolbar
-        JPanel actionPanel = new JPanel(new MigLayout("insets 5, gap 10"));
+        JPanel actionPanel = new JPanel(new MigLayout("insets 8 4 4 4, gap 10"));
+        btnToggleLock.setBackground(new Color(239, 68, 68)); // Red
+        btnToggleLock.setForeground(Color.WHITE);
+        btnToggleLock.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        btnRefresh.setBackground(new Color(241, 245, 249));
+        btnRefresh.setForeground(new Color(51, 65, 85));
+
         actionPanel.add(btnToggleLock);
         actionPanel.add(btnRefresh);
 
@@ -89,6 +137,9 @@ public class ContestantManagementPanel extends JPanel {
     public void refreshTableAsync() {
         CompletableFuture.runAsync(() -> {
             List<ContestantDTO> contestants = controller.getAllContestants();
+            long activeCount = contestants.stream().filter(c -> !c.isLocked()).count();
+            long lockedCount = contestants.size() - activeCount;
+
             SwingUtilities.invokeLater(() -> {
                 tableModel.setRowCount(0);
                 for (ContestantDTO c : contestants) {
@@ -100,6 +151,8 @@ public class ContestantManagementPanel extends JPanel {
                             c.getCreatedAt() != null ? c.getCreatedAt().toString() : "N/A"
                     });
                 }
+                lblStats.setText(String.format("Tổng số thí sinh: %d | 🟢 Đang hoạt động: %d | 🔴 Bị khóa: %d",
+                        contestants.size(), activeCount, lockedCount));
             });
         });
     }

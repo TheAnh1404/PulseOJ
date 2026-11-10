@@ -1,6 +1,6 @@
 package com.vku.pulseoj.frontend;
 
-import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import com.vku.pulseoj.backend.worker.WorkerBackendController;
 import com.vku.pulseoj.frontend.ui.worker.WorkerMainFrame;
 import org.slf4j.Logger;
@@ -11,16 +11,16 @@ import javax.swing.UIManager;
 
 /**
  * [TV2] Judge Worker Node Application Entry Point.
- * Launches the Worker Node with FlatDarkLaf theme.
+ * Launches the Worker Node with FlatLightLaf theme.
  */
 public class WorkerAppLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkerAppLauncher.class);
 
     public static void main(String[] args) {
-        // 1. Initialize Modern FlatDarkLaf Theme
+        // 1. Initialize Modern FlatLightLaf Theme
         try {
-            FlatDarkLaf.setup();
+            FlatLightLaf.setup();
             UIManager.put("Button.arc", 8);
             UIManager.put("Component.arc", 8);
             UIManager.put("ProgressBar.arc", 8);

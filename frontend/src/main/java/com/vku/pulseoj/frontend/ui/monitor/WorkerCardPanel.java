@@ -27,50 +27,59 @@ public class WorkerCardPanel extends JPanel {
 
     public WorkerCardPanel(String workerId) {
         this.workerId = workerId;
-        setLayout(new MigLayout("insets 10, gap 5, fillx", "[grow]", "[]"));
-        setPreferredSize(new Dimension(240, 200));
+        setLayout(new MigLayout("insets 12, gap 6, fillx", "[grow]", "[]"));
+        setPreferredSize(new Dimension(250, 210));
+        setBackground(Color.WHITE);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(60, 63, 65), 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        lblTitle.setText(workerId);
-        lblTitle.setFont(lblTitle.getFont().deriveFont(Font.BOLD, 14f));
+        lblTitle.setText("🖥️ " + workerId);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTitle.setForeground(new Color(15, 23, 42));
         add(lblTitle, "wrap");
 
-        lblHostPort.setFont(lblHostPort.getFont().deriveFont(11f));
-        lblHostPort.setForeground(Color.GRAY);
+        lblHostPort.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblHostPort.setForeground(new Color(100, 116, 139));
         add(lblHostPort, "wrap");
 
-        lblStatus.setFont(lblStatus.getFont().deriveFont(Font.BOLD, 12f));
+        lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
         add(lblStatus, "wrap, gapbottom 5");
 
         // CPU Bar
-        add(new JLabel("CPU Usage:"), "wrap");
+        JLabel lblCpuTag = new JLabel("CPU Usage:");
+        lblCpuTag.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblCpuTag.setForeground(new Color(71, 85, 105));
+        add(lblCpuTag, "wrap");
         pbCpu.setStringPainted(true);
         add(pbCpu, "growx, wrap");
 
         // RAM Bar
-        add(new JLabel("RAM Usage:"), "wrap");
+        JLabel lblRamTag = new JLabel("RAM Usage:");
+        lblRamTag.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblRamTag.setForeground(new Color(71, 85, 105));
+        add(lblRamTag, "wrap");
         pbRam.setStringPainted(true);
         add(pbRam, "growx, wrap");
 
         // Jobs Info
-        lblJobs.setFont(lblJobs.getFont().deriveFont(11f));
+        lblJobs.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblJobs.setForeground(new Color(100, 116, 139));
         add(lblJobs, "wrap, gaptop 5");
     }
 
     public void updateMetrics(WorkerMetricsDTO metrics) {
-        lblHostPort.setText(metrics.getWorkerHost() + ":" + metrics.getWorkerRmiPort());
+        lblHostPort.setText("IP: " + metrics.getWorkerHost() + " | Port: " + metrics.getWorkerRmiPort());
 
         WorkerStatus status = metrics.getStatus();
-        lblStatus.setText(status.name());
+        lblStatus.setText("Trạng thái: " + status.name());
         if (status == WorkerStatus.IDLE) {
-            lblStatus.setForeground(new Color(46, 204, 113)); // Green
+            lblStatus.setForeground(new Color(22, 163, 74)); // Green
         } else if (status == WorkerStatus.BUSY) {
-            lblStatus.setForeground(new Color(52, 152, 219)); // Blue
+            lblStatus.setForeground(new Color(37, 99, 235)); // Blue
         } else {
-            lblStatus.setForeground(new Color(231, 76, 60)); // Red
+            lblStatus.setForeground(new Color(220, 38, 38)); // Red
         }
 
         int cpu = (int) metrics.getCpuLoadPercent();
