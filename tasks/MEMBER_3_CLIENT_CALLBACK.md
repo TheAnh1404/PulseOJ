@@ -1,9 +1,10 @@
 # 📘 KẾ HOẠCH TRIỂN KHAI CHI TIẾT – THÀNH VIÊN 3 (TV3)
 ## CONTESTANT CLIENT, BI-DIRECTIONAL RMI CALLBACK & LIVE ACM-ICPC SCOREBOARD
 
-> **Họ và tên thành viên:** *[Điền tên thành viên 3]*  
+> **Họ và tên thành viên:** *[Bạn đảm nhiệm]*  
 > **Vai trò chuyên trách:** Contestant Client Experience & Real-time RMI Callback Engineer  
 > **Git Branch:** `feat/member3-client-callback`  
+> **Quy chuẩn mã nguồn & chữ ký hàm:** [rule/MEMBER_3_CLIENT_RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/MEMBER_3_CLIENT_RULES.md) | [rule/GENERAL_SYNTAX_RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/GENERAL_SYNTAX_RULES.md)  
 > **Giao thức chính:** Java RMI 2 chiều (Bi-directional RMI / Reverse Callback `IClientCallbackService`), `CompletableFuture` Non-blocking UI, Thuật toán xếp hạng ACM-ICPC, RSyntaxTextArea Editor.
 
 ---

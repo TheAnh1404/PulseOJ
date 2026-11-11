@@ -108,11 +108,12 @@ CREATE TABLE IF NOT EXISTS submissions (
 *(Mỗi thành viên nắm giữ trọn vẹn: 1 Phân hệ Backend + 1 Giao thức/Interface Mạng + 1 Phân hệ Frontend)*
 
 > [!IMPORTANT]
-> **Tài liệu triển khai chi tiết từng hàm, sơ đồ tuần tự và kịch bản bảo vệ chuyên sâu đã được tách thành các file cẩm nang độc lập:**
-> - 📄 **Thành viên 1:** [tasks/MEMBER_1_MASTER_NEONDB.md](file:///C:/TheAnhproject/PulseOJ/tasks/MEMBER_1_MASTER_NEONDB.md) — *Master RMI Server, Neon PostgreSQL & Submission Dispatcher (Auto-Failover)*
-> - 📄 **Thành viên 2:** [tasks/MEMBER_2_WORKER_SANDBOX.md](file:///C:/TheAnhproject/PulseOJ/tasks/MEMBER_2_WORKER_SANDBOX.md) — *Judge Worker RMI Node & Code Sandbox Execution Engine (ProcessBuilder)*
-> - 📄 **Thành viên 3:** [tasks/MEMBER_3_CLIENT_CALLBACK.md](file:///C:/TheAnhproject/PulseOJ/tasks/MEMBER_3_CLIENT_CALLBACK.md) — *Contestant Client, Bi-directional RMI Callback & Live ACM-ICPC Scoreboard*
-> - 📄 **Thành viên 4:** [tasks/MEMBER_4_UDP_MONITOR.md](file:///C:/TheAnhproject/PulseOJ/tasks/MEMBER_4_UDP_MONITOR.md) — *LAN Auto-Discovery (UDP 8888), Heartbeat Telemetry (UDP 8889) & Cluster Monitor*
+> **Tài liệu triển khai chi tiết từng hàm, sơ đồ tuần tự và kịch bản bảo vệ chuyên sâu đã được tách theo từng thư mục con tại `/rule` và `/tasks`:**
+> - 📄 **Thành viên 1:** [rule/member1/RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member1/RULES.md) | [rule/member1/TASK.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member1/TASK.md)
+> - 📄 **Thành viên 2:** [rule/member2/RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member2/RULES.md) | [rule/member2/TASK.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member2/TASK.md)
+> - 📄 **Thành viên 3 (Bạn đảm nhiệm):** [rule/member3/RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member3/RULES.md) | [rule/member3/TASK.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member3/TASK.md)
+> - 📄 **Thành viên 4:** [rule/member4/RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member4/RULES.md) | [rule/member4/TASK.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member4/TASK.md)
+> - 📜 **Quy chuẩn Cú pháp & Kiến trúc dùng chung:** [rule/GENERAL_SYNTAX_RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/GENERAL_SYNTAX_RULES.md) | [rule/README.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/README.md)
 
 ---
 
@@ -185,7 +186,10 @@ CREATE TABLE IF NOT EXISTS submissions (
 
 ---
 
-### 👤 THÀNH VIÊN 3: Contestant Client, RMI Callback 2 Chiều & Bảng Xếp Hạng Chuẩn ACM-ICPC
+### 👤 THÀNH VIÊN 3 (BẠN ĐẢM NHIỆM): Contestant Client, RMI Callback 2 Chiều & Bảng Xếp Hạng Chuẩn ACM-ICPC
+* **Thư mục quản lý riêng:** [`rule/member3/`](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member3/)
+* **Quy chuẩn Cú pháp & Hàm:** Xem tại [rule/member3/RULES.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member3/RULES.md)
+* **Kế hoạch triển khai & Kịch bản bảo vệ:** Xem tại [rule/member3/TASK.md](file:///d:/Users/BT/N3_K1/LTrMang/PulseOJ/rule/member3/TASK.md)
 
 #### Chức năng 3.1: Xác thực Thí sinh & Đăng ký Đối tượng RMI Callback (`IClientCallbackService`)
 * **Cụ thể cần làm gì (What to build):**
