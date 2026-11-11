@@ -2,6 +2,7 @@ package com.vku.pulseoj.frontend;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import com.vku.pulseoj.backend.client.ClientBackendController;
+import com.vku.pulseoj.common.util.NetworkUtils;
 import com.vku.pulseoj.frontend.ui.client.ClientMainFrame;
 import com.vku.pulseoj.frontend.ui.client.LanDiscoveryLoginDialog;
 import org.slf4j.Logger;
@@ -19,6 +20,9 @@ public class ClientAppLauncher {
     private static final Logger logger = LoggerFactory.getLogger(ClientAppLauncher.class);
 
     public static void main(String[] args) {
+        // Rule 3: Automatically configure actual LAN IPv4 to avoid 127.0.0.1 loopback error
+        NetworkUtils.configureRmiHostname();
+
         // 1. Initialize Modern FlatLightLaf Theme
         try {
             FlatLightLaf.setup();
