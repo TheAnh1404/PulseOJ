@@ -2,6 +2,7 @@ package com.vku.pulseoj.frontend.ui.monitor;
 
 import com.vku.pulseoj.backend.discovery.ClusterMonitorListener;
 import com.vku.pulseoj.backend.master.MasterBackendController;
+import com.vku.pulseoj.common.dto.ContestantDTO;
 import com.vku.pulseoj.common.dto.NetworkPacketLogDTO;
 import com.vku.pulseoj.common.dto.ProblemDTO;
 import com.vku.pulseoj.common.dto.SubmissionDTO;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * [TV4] Complete Cluster Health Monitor, Stress Test Simulator & UDP Telemetry Dashboard.
+ * Synchronized with Master modern FlatLightLaf design and 100% Vietnamese UI.
  */
 public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListener {
 
@@ -36,8 +38,8 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
     private final JPanel cardsContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
     private final NetworkInspectorPanel inspectorPanel = new NetworkInspectorPanel();
 
-    private final JLabel lblClusterStats = new JLabel("Registered Workers: 0 | Online: 0 | Busy: 0 | Offline: 0");
-    private final JButton btnStressTest = new JButton("Run Stress Test (20 Concurrent Submissions)");
+    private final JLabel lblClusterStats = new JLabel("Tổng Máy Chấm: 0  |  ● Trực Tuyến: 0 (Đang Bận: 0)  |  × Mất Kết Nối: 0");
+    private final JButton btnStressTest = new JButton("► Thử Nghiệm Bắn Tải (20 Bài Nộp Đồng Thời)");
 
     public ClusterMonitorPanel(MasterBackendController controller) {
         this.controller = controller;
@@ -47,15 +49,15 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
         cardsContainer.setBackground(new Color(248, 250, 252));
 
         // 1. Top Header & Stress Test bar
-        JPanel headerPanel = new JPanel(new MigLayout("insets 4 8 8 8, gap 15", "[grow][]", "[]"));
+        JPanel headerPanel = new JPanel(new MigLayout("insets 4 8 8 8, gap 15, fillx", "[grow][]", "[]"));
         lblClusterStats.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblClusterStats.setForeground(new Color(30, 41, 59));
         headerPanel.add(lblClusterStats, "align left");
 
         btnStressTest.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnStressTest.setBackground(new Color(124, 58, 237)); // Purple
+        btnStressTest.setBackground(new Color(124, 58, 237)); // Purple-600
         btnStressTest.setForeground(Color.WHITE);
-        btnStressTest.setText("⚡ Thử Nghiệm Bắn Tải (20 Bài Nộp Đồng Thời)");
+        btnStressTest.setToolTipText("Giả lập 20 thí sinh nộp bài cùng lúc để kiểm chứng điều phối tải (Load Balancing) giữa các Worker");
         btnStressTest.addActionListener(e -> runDistributedStressTest());
         headerPanel.add(btnStressTest, "align right");
 
@@ -63,11 +65,12 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
 
         // 2. Center: Split Pane (Top: Worker Cards; Bottom: Network Inspector)
         JScrollPane cardsScroll = new JScrollPane(cardsContainer);
-        cardsScroll.setBorder(BorderFactory.createTitledBorder("Thẻ Trạng Thái Cụm Máy Chấm (UDP Telemetry :8889)"));
+        cardsScroll.setBorder(BorderFactory.createTitledBorder("Thẻ Trạng Thái Cụm Máy Chấm Thời Gian Thực (UDP Telemetry :8889 — Ngưỡng Timeout: 6s)"));
         cardsScroll.getViewport().setBackground(new Color(248, 250, 252));
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, cardsScroll, inspectorPanel);
-        split.setResizeWeight(0.45);
+        split.setDividerLocation(245);
+        split.setResizeWeight(0.48);
         add(split, BorderLayout.CENTER);
     }
 
@@ -117,18 +120,25 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
             }
         }
 
-        lblClusterStats.setText(String.format("Registered Workers: %d | Online: %d (Busy: %d) | Offline: %d",
-                total, online, busy, offline));
+        lblClusterStats.setText(String.format(
+                "Tổng Máy Chấm: %d  |  ● Trực Tuyến: %d (Đang Chấm: %d)  |  × Mất Kết Nối: %d",
+                total, online, busy, offline
+        ));
     }
 
     private void runDistributedStressTest() {
         List<ProblemDTO> problems = controller.getAllProblems();
         if (problems.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No problems configured in DB to run stress test.", "Note", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Chưa có đề bài nào trong CSDL để chạy thử nghiệm bắn tải.",
+                    "Thông Báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         ProblemDTO targetProblem = problems.get(0);
+        List<ContestantDTO> activeContestants = controller.getAllContestants().stream()
+                .filter(c -> !c.isLocked())
+                .toList();
         int submissionCount = 20;
 
         btnStressTest.setEnabled(false);
@@ -149,25 +159,31 @@ public class ClusterMonitorPanel extends JPanel implements ClusterMonitorListene
 
             for (int i = 1; i <= submissionCount; i++) {
                 try {
+                    ContestantDTO actor = activeContestants.isEmpty()
+                            ? null
+                            : activeContestants.get((i - 1) % activeContestants.size());
+                    int contestantId = (actor != null) ? actor.getId() : 101;
+                    String username = (actor != null) ? actor.getUsername() : "student01";
                     SubmissionDTO sub = new SubmissionDTO(
                             null,
-                            1, // student01
-                            "student01",
+                            contestantId,
+                            username,
                             targetProblem.getId(),
                             targetProblem.getCode(),
                             Language.JAVA,
                             sampleJava
                     );
-                    controller.getDispatcher().enqueueSubmission(sub);
-                    Thread.sleep(80); // Small interval
+                    controller.submitLocalSubmission(sub);
+                    Thread.sleep(80);
                 } catch (Exception ignored) {}
             }
 
             SwingUtilities.invokeLater(() -> {
                 btnStressTest.setEnabled(true);
                 JOptionPane.showMessageDialog(this,
-                        "Injected 20 concurrent submissions into Master Queue!\nWatch the workers distribute and execute the load.",
-                        "Stress Test Initiated", JOptionPane.INFORMATION_MESSAGE);
+                        "Đã bơm đồng thời 20 bài nộp vào Hàng Đợi Master (Đề: " + targetProblem.getCode() + ")!\n" +
+                        "Hãy quan sát các máy chấm Worker chia tải thực thi và theo dõi tab Hàng Đợi Chấm Bài.",
+                        "Đã Kích Hoạt Bắn Tải Phân Tán", JOptionPane.INFORMATION_MESSAGE);
             });
         });
     }

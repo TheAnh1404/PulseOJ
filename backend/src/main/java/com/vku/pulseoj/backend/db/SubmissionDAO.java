@@ -131,6 +131,7 @@ public class SubmissionDAO {
                     list.add(sub);
                 }
             }
+            list.sort(java.util.Comparator.comparingInt(SubmissionDTO::getId).reversed());
             return list;
         }
 
@@ -157,6 +158,7 @@ public class SubmissionDAO {
         List<SubmissionDTO> list = new ArrayList<>();
         if (NeonDataSourceConfig.isMockMode()) {
             list.addAll(MOCK_SUBMISSIONS.values());
+            list.sort(java.util.Comparator.comparingInt(SubmissionDTO::getId).reversed());
             return list;
         }
 

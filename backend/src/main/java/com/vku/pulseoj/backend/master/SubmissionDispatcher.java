@@ -69,6 +69,14 @@ public class SubmissionDispatcher implements Runnable {
      * Enqueues a new submission for judging.
      */
     public void enqueueSubmission(SubmissionDTO submission) {
+        if (submission.getId() == null) {
+            try {
+                submission = submissionDAO.saveSubmission(submission);
+            } catch (Exception e) {
+                logger.error("Failed to assign ID to unpersisted submission: {}", e.getMessage(), e);
+                return;
+            }
+        }
         submission.setVerdict(Verdict.PENDING);
         queue.offer(submission);
         logger.info("Enqueued submission #{} for problem [{}] from user [{}]",

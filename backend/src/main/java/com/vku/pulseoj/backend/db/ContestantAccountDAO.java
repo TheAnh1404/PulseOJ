@@ -147,6 +147,7 @@ public class ContestantAccountDAO {
             for (MockContestant m : MOCK_STORE_BY_ID.values()) {
                 list.add(new ContestantDTO(m.id, m.username, m.fullName, m.isLocked, m.createdAt));
             }
+            list.sort(java.util.Comparator.comparingInt(ContestantDTO::getId));
             return list;
         }
 

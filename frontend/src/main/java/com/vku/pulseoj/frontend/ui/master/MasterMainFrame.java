@@ -55,25 +55,27 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
         // Main Tabbed Interface
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        tabbedPane.addTab("👥 Thí sinh (Neon DB)", contestantPanel);
-        tabbedPane.addTab("📚 Đề bài & Test Cases", problemPanel);
-        tabbedPane.addTab("⏱️ Hàng đợi Chấm bài (Live Queue)", queuePanel);
-        tabbedPane.addTab("📡 Giám sát Cụm & UDP", clusterMonitorPanel);
+        tabbedPane.addTab("Thí sinh (Neon DB)", contestantPanel);
+        tabbedPane.addTab("Đề bài & Test Cases", problemPanel);
+        tabbedPane.addTab("Hàng đợi Chấm bài (Live Queue)", queuePanel);
+        tabbedPane.addTab("Giám sát Cụm & UDP", clusterMonitorPanel);
 
         // Top Header Banner (Modern & Bright)
         JPanel headerBanner = new JPanel(new MigLayout("insets 12 18 12 18, fillx", "[grow][]", "[]"));
         headerBanner.setBackground(Color.WHITE);
         headerBanner.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)));
 
-        JPanel titleBlock = new JPanel(new MigLayout("insets 0, gap 2", "[]", "[][]"));
+        JPanel titleBlock = new JPanel(new MigLayout("insets 0, gap 2", "[grow]", "[][]"));
         titleBlock.setBackground(Color.WHITE);
-        JLabel lblAppTitle = new JLabel("⚡ PULSE OJ — MASTER SERVER");
+        JLabel lblAppTitle = new JLabel("♦ PULSE OJ — MASTER SERVER");
         lblAppTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblAppTitle.setForeground(new Color(15, 23, 42)); // Deep Slate
+        lblAppTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
 
         JLabel lblAppSubtitle = new JLabel("Bảng Điều Khiển Giáo Viên • Neon Cloud Database • Hệ Thống Chấm Phân Tán");
         lblAppSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblAppSubtitle.setForeground(new Color(100, 116, 139)); // Slate-500
+        lblAppSubtitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
 
         titleBlock.add(lblAppTitle, "wrap");
         titleBlock.add(lblAppSubtitle);
@@ -135,7 +137,7 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
                 controller.startServer(1099, this, clusterMonitorPanel);
 
                 SwingUtilities.invokeLater(() -> {
-                    lblServerStatus.setText(String.format("🟢 Master RMI: %s:%d | UDP: 8888/8889",
+                    lblServerStatus.setText(String.format("● Master RMI: %s:%d | UDP: 8888/8889",
                             controller.getServerIp(), controller.getRmiPort()));
                     lblServerStatus.setBackground(new Color(236, 253, 245));
                     lblServerStatus.setForeground(new Color(5, 150, 105));
@@ -145,7 +147,7 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
                     ));
 
                     if (NeonDataSourceConfig.isMockMode()) {
-                        lblDbStatus.setText("⚠️ Neon DB: MOCK MODE");
+                        lblDbStatus.setText("[!] Neon DB: MOCK MODE");
                         lblDbStatus.setBackground(new Color(254, 243, 199));
                         lblDbStatus.setForeground(new Color(180, 83, 9));
                         lblDbStatus.setBorder(BorderFactory.createCompoundBorder(
@@ -153,7 +155,7 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
                                 BorderFactory.createEmptyBorder(6, 12, 6, 12)
                         ));
                     } else {
-                        lblDbStatus.setText("☁️ Neon DB: CONNECTED SSL");
+                        lblDbStatus.setText("● Neon DB: CONNECTED SSL");
                         lblDbStatus.setBackground(new Color(239, 246, 255));
                         lblDbStatus.setForeground(new Color(29, 78, 216));
                         lblDbStatus.setBorder(BorderFactory.createCompoundBorder(
@@ -164,7 +166,7 @@ public class MasterMainFrame extends JFrame implements MasterUiListener {
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
-                    lblServerStatus.setText("🔴 Server Start Failed: " + e.getMessage());
+                    lblServerStatus.setText("× Server Start Failed: " + e.getMessage());
                     lblServerStatus.setBackground(new Color(254, 242, 242));
                     lblServerStatus.setForeground(new Color(220, 38, 38));
                     JOptionPane.showMessageDialog(this,

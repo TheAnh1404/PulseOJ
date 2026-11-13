@@ -29,6 +29,7 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
     private volatile WorkerStatus status = WorkerStatus.IDLE;
+    private volatile boolean shutdownRequested = false;
     private IMasterClusterService masterClusterService;
     private UdpHeartbeatSender heartbeatSender;
     private WorkerUiListener uiListener;
@@ -42,6 +43,19 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
                 uiListener.onSandboxConsoleOutput(line);
             }
         });
+        this.sandbox.setTestStartListener((currentTest, totalTests) -> {
+            if (uiListener != null) {
+                uiListener.onTestExecuting(currentTest, totalTests);
+            }
+        });
+    }
+
+    public void setDemoSlowMode(boolean enabled) {
+        this.sandbox.setDemoSlowMode(enabled);
+    }
+
+    public boolean isDemoSlowMode() {
+        return this.sandbox.isDemoSlowMode();
     }
 
     public void setMasterClusterService(IMasterClusterService masterClusterService) {
@@ -69,6 +83,9 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
         threadPool.submit(() -> {
             try {
                 SubmissionDTO completed = sandbox.executeSubmission(submission, problem, testCases, result -> {
+                    if (shutdownRequested || Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
                     // 1. Report test progress to Master
                     if (masterClusterService != null) {
                         try {
@@ -82,6 +99,12 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
                         uiListener.onTestFinished(result);
                     }
                 });
+
+                if (shutdownRequested || Thread.currentThread().isInterrupted()) {
+                    logger.warn("Worker [{}] aborted reporting verdict for submission #{} due to shutdown/crash.",
+                            workerId, submission.getId());
+                    return;
+                }
 
                 // Report final completed verdict to Master
                 if (masterClusterService != null) {
@@ -97,9 +120,16 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
                 }
 
             } catch (Exception e) {
-                logger.error("Job execution failure for submission #{}: {}", submission.getId(), e.getMessage(), e);
+                if (shutdownRequested || Thread.currentThread().isInterrupted()) {
+                    logger.warn("Job execution interrupted for submission #{} on shutting-down worker [{}]",
+                            submission.getId(), workerId);
+                } else {
+                    logger.error("Job execution failure for submission #{}: {}", submission.getId(), e.getMessage(), e);
+                }
             } finally {
-                updateStatus(WorkerStatus.IDLE);
+                if (!shutdownRequested) {
+                    updateStatus(WorkerStatus.IDLE);
+                }
             }
         });
     }
@@ -131,6 +161,7 @@ public class JudgeWorkerServiceImpl extends UnicastRemoteObject implements IJudg
     }
 
     public void shutdown() {
+        shutdownRequested = true;
         threadPool.shutdownNow();
     }
 }

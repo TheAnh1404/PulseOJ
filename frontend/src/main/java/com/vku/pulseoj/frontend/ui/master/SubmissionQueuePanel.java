@@ -50,12 +50,12 @@ public class SubmissionQueuePanel extends JPanel {
         topBar.add(lblStats, "align left");
 
         JPanel rightControls = new JPanel(new MigLayout("insets 0, gap 10", "[][]", "[]"));
-        JLabel lblHint = new JLabel("💡 Nhấp đúp chuột vào bài nộp để xem mã nguồn & chẩn đoán");
+        JLabel lblHint = new JLabel("► Nhấp đúp chuột vào bài nộp để xem mã nguồn & chẩn đoán");
         lblHint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         lblHint.setForeground(new Color(100, 116, 139));
         rightControls.add(lblHint);
 
-        JButton btnRefresh = new JButton("🔄 Làm Mới Hàng Đợi");
+        JButton btnRefresh = new JButton("► Làm Mới Hàng Đợi");
         btnRefresh.setBackground(new Color(37, 99, 235));
         btnRefresh.setForeground(Color.WHITE);
         btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -136,61 +136,65 @@ public class SubmissionQueuePanel extends JPanel {
             if (sub == null) return;
             SwingUtilities.invokeLater(() -> {
                 JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
-                        "Submission #" + sub.getId() + " - " + sub.getContestantUsername() + " [" + sub.getProblemCode() + "]",
+                        "Chi Tiết Bài Nộp #" + sub.getId() + " — Thí sinh: " + sub.getContestantUsername() + " [" + sub.getProblemCode() + "]",
                         JDialog.ModalityType.MODELESS);
-                dialog.setSize(680, 540);
+                dialog.setSize(700, 540);
                 dialog.setLocationRelativeTo(this);
                 dialog.setLayout(new BorderLayout(10, 10));
 
-                JPanel infoPanel = new JPanel(new MigLayout("insets 10, gap 8", "[][grow][][grow]", "[]"));
-                infoPanel.setBorder(BorderFactory.createTitledBorder("Submission Metadata"));
+                JPanel infoPanel = new JPanel(new MigLayout("insets 10 14 10 14, gap 10", "[right][grow,fill][right][grow,fill][right][grow,fill]", "[][][]"));
+                infoPanel.setBorder(BorderFactory.createTitledBorder("Thông Tin Bài Nộp"));
 
-                infoPanel.add(new JLabel("ID:"));
-                infoPanel.add(new JLabel(String.valueOf(sub.getId())));
-                infoPanel.add(new JLabel("Contestant:"));
+                infoPanel.add(new JLabel("Mã Bài Nộp:"));
+                infoPanel.add(new JLabel("#" + sub.getId()));
+                infoPanel.add(new JLabel("Thí Sinh:"));
                 infoPanel.add(new JLabel(sub.getContestantUsername()));
+                infoPanel.add(new JLabel("Đề Bài:"));
+                infoPanel.add(new JLabel(sub.getProblemCode()), "wrap");
 
-                infoPanel.add(new JLabel("Problem:"));
-                infoPanel.add(new JLabel(sub.getProblemCode()));
-                infoPanel.add(new JLabel("Language:"));
+                infoPanel.add(new JLabel("Ngôn Ngữ:"));
                 infoPanel.add(new JLabel(String.valueOf(sub.getLanguage())));
-
-                infoPanel.add(new JLabel("Verdict:"));
+                infoPanel.add(new JLabel("Kết Quả:"));
                 JLabel lblV = new JLabel(String.valueOf(sub.getVerdict()));
-                lblV.setFont(lblV.getFont().deriveFont(Font.BOLD));
+                lblV.setFont(new Font("Segoe UI", Font.BOLD, 12));
                 if (sub.getVerdict() == Verdict.AC) {
-                    lblV.setForeground(new Color(40, 180, 99));
+                    lblV.setForeground(new Color(5, 150, 105));
                 } else if (sub.getVerdict() == Verdict.PENDING || sub.getVerdict() == Verdict.RUNNING) {
-                    lblV.setForeground(new Color(52, 152, 219));
+                    lblV.setForeground(new Color(37, 99, 235));
                 } else {
-                    lblV.setForeground(new Color(231, 76, 60));
+                    lblV.setForeground(new Color(220, 38, 38));
                 }
                 infoPanel.add(lblV);
+                infoPanel.add(new JLabel("Trạm Chấm:"));
+                infoPanel.add(new JLabel(sub.getWorkerId() != null ? sub.getWorkerId() : "---"), "wrap");
 
-                infoPanel.add(new JLabel("Worker Node:"));
-                infoPanel.add(new JLabel(sub.getWorkerId() != null ? sub.getWorkerId() : "---"));
-
-                infoPanel.add(new JLabel("Execution Time:"));
+                infoPanel.add(new JLabel("Thời Gian:"));
                 infoPanel.add(new JLabel(sub.getExecutionTimeMs() + " ms"));
-                infoPanel.add(new JLabel("Memory Used:"));
+                infoPanel.add(new JLabel("Bộ Nhớ:"));
                 infoPanel.add(new JLabel(sub.getMemoryUsedKb() + " KB"));
+                infoPanel.add(new JLabel("Thời Điểm:"));
+                infoPanel.add(new JLabel(sub.getSubmittedAt() > 0 ? timeFmt.format(new Date(sub.getSubmittedAt())) : "N/A"), "wrap");
 
                 JTabbedPane tabs = new JTabbedPane();
 
                 JTextArea txtSource = new JTextArea(sub.getSourceCode() != null ? sub.getSourceCode() : "");
                 txtSource.setEditable(false);
-                txtSource.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-                tabs.addTab("Source Code", new JScrollPane(txtSource));
+                txtSource.setFont(new Font("Consolas", Font.PLAIN, 13));
+                tabs.addTab("Mã Nguồn Đã Nộp", new JScrollPane(txtSource));
 
-                JTextArea txtOutput = new JTextArea(sub.getCompilerOutput() != null ? sub.getCompilerOutput() : "No compiler/error output.");
+                JTextArea txtOutput = new JTextArea(
+                        (sub.getCompilerOutput() != null && !sub.getCompilerOutput().isBlank())
+                                ? sub.getCompilerOutput()
+                                : "Không có lỗi biên dịch hoặc thông báo lỗi hệ thống."
+                );
                 txtOutput.setEditable(false);
-                txtOutput.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-                tabs.addTab("Compiler Output & Diagnostics", new JScrollPane(txtOutput));
+                txtOutput.setFont(new Font("Consolas", Font.PLAIN, 13));
+                tabs.addTab("Thông Báo Biên Dịch & Chẩn Đoán", new JScrollPane(txtOutput));
 
                 dialog.add(infoPanel, BorderLayout.NORTH);
                 dialog.add(tabs, BorderLayout.CENTER);
 
-                JButton btnClose = new JButton("Close");
+                JButton btnClose = new JButton("Đóng");
                 btnClose.addActionListener(ev -> dialog.dispose());
                 JPanel south = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
                 south.add(btnClose);
