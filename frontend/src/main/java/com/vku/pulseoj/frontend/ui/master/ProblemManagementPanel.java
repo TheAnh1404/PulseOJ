@@ -46,9 +46,9 @@ public class ProblemManagementPanel extends JPanel {
     private final JTextArea txtDescription = new JTextArea();
     private final JLabel lblProblemDetails = new JLabel("Chọn một đề bài từ danh sách bên trái để xem chi tiết");
 
-    private final JButton btnNewProblem = new JButton("➕ Tạo Đề Bài Mới");
-    private final JButton btnAddTestCase = new JButton("➕ Thêm Test Case");
-    private final JButton btnRefresh = new JButton("🔄 Làm Mới");
+    private final JButton btnNewProblem = new JButton("+ Tạo Đề Bài Mới");
+    private final JButton btnAddTestCase = new JButton("+ Thêm Test Case");
+    private final JButton btnRefresh = new JButton("► Làm Mới");
 
     private ProblemDTO currentSelectedProblem;
 
@@ -66,13 +66,18 @@ public class ProblemManagementPanel extends JPanel {
         problemsTable = new JTable(problemsModel);
         problemsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         problemsTable.setRowHeight(30);
+        problemsTable.getColumnModel().getColumn(0).setPreferredWidth(38);
+        problemsTable.getColumnModel().getColumn(1).setPreferredWidth(85);
+        problemsTable.getColumnModel().getColumn(2).setPreferredWidth(170);
+        problemsTable.getColumnModel().getColumn(3).setPreferredWidth(60);
+        problemsTable.getColumnModel().getColumn(4).setPreferredWidth(60);
 
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
         leftPanel.setBorder(BorderFactory.createTitledBorder("Danh Sách Đề Bài Kỳ Thi"));
         JScrollPane leftScroll = new JScrollPane(problemsTable);
         leftScroll.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
         leftPanel.add(leftScroll, BorderLayout.CENTER);
-        leftPanel.setPreferredSize(new Dimension(420, 500));
+        leftPanel.setPreferredSize(new Dimension(445, 500));
 
         // 2. Right Panel (Problem details & Test Cases)
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
@@ -99,7 +104,7 @@ public class ProblemManagementPanel extends JPanel {
         detailHeader.add(descScroll, BorderLayout.CENTER);
 
         // Test Cases Table
-        String[] testCols = {"Thứ Tự", "Loại Test", "Dữ Liệu Input (Mẫu)", "Kết Quả Output Mong Muốn"};
+        String[] testCols = {"Thứ Tự", "Loại Test", "Dữ Liệu Input (Mẫu)", "Output Mong Muốn"};
         testCasesModel = new DefaultTableModel(testCols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) { return false; }
@@ -231,8 +236,8 @@ public class ProblemManagementPanel extends JPanel {
     }
 
     private void showCreateProblemDialog() {
-        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Create New Problem", JDialog.ModalityType.APPLICATION_MODAL);
-        dialog.setLayout(new MigLayout("insets 15, gap 10", "[][grow]", "[]"));
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Tạo Đề Bài Mới", JDialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new MigLayout("insets 15, gap 10", "[right][grow,fill]", "[]"));
 
         JTextField txtCode = new JTextField(15);
         JTextField txtTitle = new JTextField(25);
@@ -240,30 +245,50 @@ public class ProblemManagementPanel extends JPanel {
         JTextField txtMl = new JTextField("256", 10);
         JTextArea txtDesc = new JTextArea(6, 30);
         txtDesc.setLineWrap(true);
+        txtDesc.setWrapStyleWord(true);
 
-        dialog.add(new JLabel("Problem Code:")); dialog.add(txtCode, "wrap");
-        dialog.add(new JLabel("Title:")); dialog.add(txtTitle, "wrap");
-        dialog.add(new JLabel("Time Limit (ms):")); dialog.add(txtTl, "wrap");
-        dialog.add(new JLabel("Memory Limit (MB):")); dialog.add(txtMl, "wrap");
-        dialog.add(new JLabel("Description:"), "top"); dialog.add(new JScrollPane(txtDesc), "wrap");
+        dialog.add(new JLabel("Mã Đề Bài:")); dialog.add(txtCode, "wrap");
+        dialog.add(new JLabel("Tên Đề Bài:")); dialog.add(txtTitle, "wrap");
+        dialog.add(new JLabel("Giới Hạn Thời Gian (ms):")); dialog.add(txtTl, "wrap");
+        dialog.add(new JLabel("Giới Hạn Bộ Nhớ (MB):")); dialog.add(txtMl, "wrap");
+        dialog.add(new JLabel("Mô Tả Đề Bài:"), "top"); dialog.add(new JScrollPane(txtDesc), "wrap");
 
-        JButton btnSave = new JButton("Save Problem");
+        JButton btnSave = new JButton("+ Lưu Đề Bài");
+        btnSave.setBackground(new Color(37, 99, 235));
+        btnSave.setForeground(Color.WHITE);
         btnSave.addActionListener(e -> {
-            try {
-                ProblemDTO p = new ProblemDTO(
-                        null,
-                        txtCode.getText().trim().toUpperCase(),
-                        txtTitle.getText().trim(),
-                        txtDesc.getText(),
-                        Integer.parseInt(txtTl.getText().trim()),
-                        Integer.parseInt(txtMl.getText().trim())
-                );
-                controller.saveProblem(p);
-                dialog.dispose();
-                refreshProblemsAsync();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Error saving problem: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            String code = txtCode.getText().trim().toUpperCase();
+            String title = txtTitle.getText().trim();
+            if (code.isEmpty() || title.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đầy đủ Mã đề và Tên đề bài.", "Thiếu Thông Tin", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            int tl;
+            int ml;
+            try {
+                tl = Integer.parseInt(txtTl.getText().trim());
+                ml = Integer.parseInt(txtMl.getText().trim());
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(dialog, "Giới hạn thời gian và bộ nhớ phải là số nguyên hợp lệ.", "Lỗi Nhập Liệu", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            btnSave.setEnabled(false);
+            ProblemDTO p = new ProblemDTO(null, code, title, txtDesc.getText(), tl, ml);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    controller.saveProblem(p);
+                    SwingUtilities.invokeLater(() -> {
+                        dialog.dispose();
+                        refreshProblemsAsync();
+                    });
+                } catch (Exception ex) {
+                    SwingUtilities.invokeLater(() -> {
+                        btnSave.setEnabled(true);
+                        JOptionPane.showMessageDialog(dialog, "Lỗi lưu đề bài: " + ex.getMessage(), "Lỗi Hệ Thống", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            });
         });
 
         dialog.add(btnSave, "span 2, align right");
@@ -274,40 +299,58 @@ public class ProblemManagementPanel extends JPanel {
 
     private void showAddTestCaseDialog() {
         if (currentSelectedProblem == null) {
-            JOptionPane.showMessageDialog(this, "Select a problem first.", "Note", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một đề bài ở bảng bên trái trước.", "Thông Báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Add Test Case to " + currentSelectedProblem.getCode(), JDialog.ModalityType.APPLICATION_MODAL);
-        dialog.setLayout(new MigLayout("insets 15, gap 10", "[][grow]", "[]"));
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Thêm Test Case cho [" + currentSelectedProblem.getCode() + "]", JDialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new MigLayout("insets 15, gap 10", "[right][grow,fill]", "[]"));
 
         JTextField txtOrder = new JTextField(String.valueOf(testCasesModel.getRowCount() + 1), 6);
-        JCheckBox chkSample = new JCheckBox("Is Sample Test Case (Visible to contestants)");
+        JCheckBox chkSample = new JCheckBox("Là Test Mẫu Công Khai (Thí sinh nhìn thấy khi đọc đề)");
         JTextArea txtInput = new JTextArea(4, 30);
         JTextArea txtOutput = new JTextArea(4, 30);
 
-        dialog.add(new JLabel("Test Order:")); dialog.add(txtOrder, "wrap");
+        dialog.add(new JLabel("Thứ Tự Test:")); dialog.add(txtOrder, "wrap");
         dialog.add(chkSample, "span 2, wrap");
-        dialog.add(new JLabel("Input:"), "top"); dialog.add(new JScrollPane(txtInput), "wrap");
-        dialog.add(new JLabel("Expected Output:"), "top"); dialog.add(new JScrollPane(txtOutput), "wrap");
+        dialog.add(new JLabel("Đầu Vào (Input):"), "top"); dialog.add(new JScrollPane(txtInput), "wrap");
+        dialog.add(new JLabel("Đầu Ra Mong Muốn:"), "top"); dialog.add(new JScrollPane(txtOutput), "wrap");
 
-        JButton btnSave = new JButton("Add Test Case");
+        JButton btnSave = new JButton("+ Thêm Test Case");
+        btnSave.setBackground(new Color(5, 150, 105));
+        btnSave.setForeground(Color.WHITE);
         btnSave.addActionListener(e -> {
+            int order;
             try {
-                TestCaseDTO tc = new TestCaseDTO(
-                        null,
-                        currentSelectedProblem.getId(),
-                        Integer.parseInt(txtOrder.getText().trim()),
-                        txtInput.getText(),
-                        txtOutput.getText(),
-                        chkSample.isSelected()
-                );
-                controller.addTestCase(tc);
-                dialog.dispose();
-                onProblemSelected();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                order = Integer.parseInt(txtOrder.getText().trim());
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(dialog, "Thứ tự test phải là số nguyên.", "Lỗi Nhập Liệu", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+
+            btnSave.setEnabled(false);
+            TestCaseDTO tc = new TestCaseDTO(
+                    null,
+                    currentSelectedProblem.getId(),
+                    order,
+                    txtInput.getText(),
+                    txtOutput.getText(),
+                    chkSample.isSelected()
+            );
+            CompletableFuture.runAsync(() -> {
+                try {
+                    controller.addTestCase(tc);
+                    SwingUtilities.invokeLater(() -> {
+                        dialog.dispose();
+                        onProblemSelected();
+                    });
+                } catch (Exception ex) {
+                    SwingUtilities.invokeLater(() -> {
+                        btnSave.setEnabled(true);
+                        JOptionPane.showMessageDialog(dialog, "Lỗi thêm test case: " + ex.getMessage(), "Lỗi Hệ Thống", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            });
         });
 
         dialog.add(btnSave, "span 2, align right");

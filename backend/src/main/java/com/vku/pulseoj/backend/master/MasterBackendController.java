@@ -158,6 +158,12 @@ public class MasterBackendController {
         return submissionDAO.getAllSubmissions();
     }
 
+    public SubmissionDTO submitLocalSubmission(SubmissionDTO submission) throws Exception {
+        SubmissionDTO saved = submissionDAO.saveSubmission(submission);
+        dispatcher.enqueueSubmission(saved);
+        return saved;
+    }
+
     public SubmissionDTO getSubmissionById(int submissionId) {
         return submissionDAO.getById(submissionId);
     }

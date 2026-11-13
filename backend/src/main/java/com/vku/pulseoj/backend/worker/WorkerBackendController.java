@@ -32,6 +32,7 @@ public class WorkerBackendController {
     private UdpHeartbeatSender heartbeatSender;
 
     private boolean isConnected = false;
+    private volatile boolean demoSlowMode = true;
     private WorkerUiListener uiListener;
 
     public WorkerBackendController() {
@@ -40,6 +41,17 @@ public class WorkerBackendController {
 
     public WorkerBackendController(String workerId) {
         this.workerId = workerId;
+    }
+
+    public void setDemoSlowMode(boolean enabled) {
+        this.demoSlowMode = enabled;
+        if (workerService != null) {
+            workerService.setDemoSlowMode(enabled);
+        }
+    }
+
+    public boolean isDemoSlowMode() {
+        return demoSlowMode;
     }
 
     public void setUiListener(WorkerUiListener listener) {
@@ -62,6 +74,7 @@ public class WorkerBackendController {
 
             // Create worker RMI service
             workerService = new JudgeWorkerServiceImpl(workerId);
+            workerService.setDemoSlowMode(demoSlowMode);
             workerService.setMasterClusterService(masterClusterService);
             if (uiListener != null) {
                 workerService.setUiListener(uiListener);
@@ -131,7 +144,9 @@ public class WorkerBackendController {
         if (heartbeatSender != null) {
             heartbeatSender.stop();
         }
+        masterClusterService = null;
         if (workerService != null) {
+            workerService.setMasterClusterService(null);
             try {
                 UnicastRemoteObject.unexportObject(workerService, true);
             } catch (Exception ignored) {}

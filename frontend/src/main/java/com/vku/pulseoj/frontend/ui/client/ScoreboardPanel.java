@@ -1,6 +1,7 @@
 package com.vku.pulseoj.frontend.ui.client;
 
 import com.vku.pulseoj.backend.client.ClientBackendController;
+import com.vku.pulseoj.common.dto.ContestantDTO;
 import com.vku.pulseoj.common.dto.ScoreboardRowDTO;
 import com.vku.pulseoj.common.dto.ScoreboardRowDTO.ProblemScoreDetail;
 import net.miginfocom.swing.MigLayout;
@@ -18,34 +19,41 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
  * [TV3] ACM-ICPC Live Scoreboard View Panel.
- * Dynamically renders rank, solved problems, penalty minutes, and per-problem status (+attempts, time).
+ * Synchronized with Master modern FlatLightLaf pastel badges and Vietnamese labels.
  */
 public class ScoreboardPanel extends JPanel {
 
     private final ClientBackendController controller;
     private final DefaultTableModel tableModel;
     private final JTable table;
-    private final JLabel lblLastUpdated = new JLabel("Live Standings (ACM-ICPC Standard)");
+    private final JLabel lblLastUpdated = new JLabel("♦ Bảng Xếp Hạng Trực Tiếp Chuẩn ACM-ICPC (Penalty: +20 phút / lần nộp sai trước khi AC)");
     private final List<String> problemCodes = new ArrayList<>();
+    private final SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss");
 
     public ScoreboardPanel(ClientBackendController controller) {
         this.controller = controller;
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
         // Top Toolbar
-        JPanel topBar = new JPanel(new MigLayout("insets 5, gap 10", "[grow][]", "[]"));
-        lblLastUpdated.setFont(lblLastUpdated.getFont().deriveFont(Font.BOLD, 13f));
-        topBar.add(lblLastUpdated);
+        JPanel topBar = new JPanel(new MigLayout("insets 4 8 8 8, fillx", "[grow][]", "[]"));
+        lblLastUpdated.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblLastUpdated.setForeground(new Color(30, 41, 59));
+        topBar.add(lblLastUpdated, "align left");
 
-        JButton btnRefresh = new JButton("Refresh Scoreboard");
+        JButton btnRefresh = new JButton("► Làm Mới Bảng Xếp Hạng");
+        btnRefresh.setBackground(new Color(37, 99, 235));
+        btnRefresh.setForeground(Color.WHITE);
+        btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnRefresh.addActionListener(e -> refreshScoreboardAsync());
         topBar.add(btnRefresh, "align right");
         add(topBar, BorderLayout.NORTH);
@@ -56,38 +64,55 @@ public class ScoreboardPanel extends JPanel {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(28);
+        table.setRowHeight(32);
 
-        // Custom Cell Renderer for coloring problem cells
+        // Custom Pastel Cell Renderer for FlatLightLaf bright theme
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (isSelected) {
+                    return c;
+                }
+
+                ContestantDTO current = controller.getCurrentContestant();
+                String rowUsername = table.getColumnCount() > 1 && table.getValueAt(row, 1) != null
+                        ? table.getValueAt(row, 1).toString()
+                        : "";
+                boolean isCurrentUserRow = current != null && rowUsername.equalsIgnoreCase(current.getUsername());
+
                 if (value != null && column >= 5) {
                     String str = value.toString();
                     if (str.startsWith("+")) {
-                        c.setBackground(new Color(39, 174, 96, 80)); // Green tint
-                        c.setForeground(Color.WHITE);
-                        c.setFont(c.getFont().deriveFont(Font.BOLD));
+                        c.setBackground(new Color(220, 252, 231)); // Soft emerald
+                        c.setForeground(new Color(22, 101, 52));
+                        c.setFont(c.getFont().deriveFont(Font.BOLD, 12f));
                     } else if (str.startsWith("-")) {
-                        c.setBackground(new Color(192, 57, 43, 80)); // Red tint
-                        c.setForeground(Color.WHITE);
+                        c.setBackground(new Color(254, 226, 226)); // Soft red
+                        c.setForeground(new Color(153, 27, 27));
+                        c.setFont(c.getFont().deriveFont(Font.BOLD, 12f));
                     } else if (str.startsWith("?")) {
-                        c.setBackground(new Color(243, 156, 18, 80)); // Yellow tint
-                        c.setForeground(Color.WHITE);
+                        c.setBackground(new Color(254, 243, 199)); // Soft amber
+                        c.setForeground(new Color(146, 64, 14));
+                        c.setFont(c.getFont().deriveFont(Font.BOLD, 12f));
                     } else {
-                        c.setBackground(table.getBackground());
-                        c.setForeground(table.getForeground());
+                        c.setBackground(isCurrentUserRow ? new Color(239, 246, 255) : table.getBackground());
+                        c.setForeground(new Color(148, 163, 184));
                     }
                 } else {
-                    c.setBackground(table.getBackground());
+                    c.setBackground(isCurrentUserRow ? new Color(239, 246, 255) : table.getBackground());
                     c.setForeground(table.getForeground());
+                    if (column == 0 || column == 3 || isCurrentUserRow) {
+                        c.setFont(c.getFont().deriveFont(Font.BOLD));
+                    }
                 }
                 return c;
             }
         });
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        add(scrollPane, BorderLayout.CENTER);
 
         refreshScoreboardAsync();
     }
@@ -98,7 +123,6 @@ public class ScoreboardPanel extends JPanel {
 
     public void updateScoreboard(List<ScoreboardRowDTO> scoreboard) {
         SwingUtilities.invokeLater(() -> {
-            // Collect all unique problem codes across rows
             Set<String> uniqueCodes = new HashSet<>();
             for (ScoreboardRowDTO row : scoreboard) {
                 uniqueCodes.addAll(row.getProblemDetails().keySet());
@@ -107,20 +131,19 @@ public class ScoreboardPanel extends JPanel {
             problemCodes.clear();
             problemCodes.addAll(uniqueCodes.stream().sorted().toList());
 
-            // Build dynamic headers
             List<String> headers = new ArrayList<>();
-            headers.add("Rank");
-            headers.add("Username");
-            headers.add("Full Name");
-            headers.add("Solved");
-            headers.add("Penalty (min)");
+            headers.add("Hạng");
+            headers.add("Tài Khoản");
+            headers.add("Họ và Tên Thí Sinh");
+            headers.add("Số Bài Giải (AC)");
+            headers.add("Tổng Phạt (Phút)");
             headers.addAll(problemCodes);
 
             tableModel.setDataVector(new Object[0][0], headers.toArray());
 
             for (ScoreboardRowDTO row : scoreboard) {
                 List<Object> rowData = new ArrayList<>();
-                rowData.add(row.getRank());
+                rowData.add("#" + row.getRank());
                 rowData.add(row.getUsername());
                 rowData.add(row.getFullName());
                 rowData.add(row.getSolvedCount());
@@ -133,6 +156,11 @@ public class ScoreboardPanel extends JPanel {
 
                 tableModel.addRow(rowData.toArray());
             }
+
+            lblLastUpdated.setText(String.format(
+                    "♦ Bảng Xếp Hạng Trực Tiếp Chuẩn ACM-ICPC — Cập nhật lúc %s (%d thí sinh)",
+                    timeFmt.format(new Date()), scoreboard.size()
+            ));
         });
     }
 }

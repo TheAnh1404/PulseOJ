@@ -79,6 +79,7 @@ public class ProblemDAO {
                 copy.setTestCases(getTestCasesForProblem(p.getId(), false));
                 list.add(copy);
             }
+            list.sort(java.util.Comparator.comparingInt(ProblemDTO::getId));
             return list;
         }
 

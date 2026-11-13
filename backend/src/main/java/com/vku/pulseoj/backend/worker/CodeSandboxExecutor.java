@@ -32,6 +32,9 @@ public class CodeSandboxExecutor {
 
     private final String workerId;
     private Consumer<String> consoleLogger;
+    private java.util.function.BiConsumer<Integer, Integer> testStartListener;
+    private volatile boolean demoSlowMode = false;
+    private volatile long demoDelayMs = 400L;
 
     public CodeSandboxExecutor(String workerId) {
         this.workerId = workerId;
@@ -39,6 +42,23 @@ public class CodeSandboxExecutor {
 
     public void setConsoleLogger(Consumer<String> consoleLogger) {
         this.consoleLogger = consoleLogger;
+    }
+
+    public void setTestStartListener(java.util.function.BiConsumer<Integer, Integer> testStartListener) {
+        this.testStartListener = testStartListener;
+    }
+
+    public void setDemoSlowMode(boolean demoSlowMode) {
+        this.demoSlowMode = demoSlowMode;
+        log("Chế độ Demo Chậm (400ms/test): " + (demoSlowMode ? "BẬT" : "TẮT"));
+    }
+
+    public boolean isDemoSlowMode() {
+        return demoSlowMode;
+    }
+
+    public void setDemoDelayMs(long demoDelayMs) {
+        this.demoDelayMs = Math.max(0L, demoDelayMs);
     }
 
     private void log(String msg) {
@@ -92,9 +112,24 @@ public class CodeSandboxExecutor {
 
             // 3. Run test cases
             for (int i = 0; i < testCases.size(); i++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new IllegalStateException("Sandbox execution interrupted");
+                }
                 TestCaseDTO tc = testCases.get(i);
                 int testIndex = i + 1;
                 log(String.format("Running Test #%d/%d...", testIndex, testCases.size()));
+                if (testStartListener != null) {
+                    testStartListener.accept(testIndex, testCases.size());
+                }
+
+                if (demoSlowMode && demoDelayMs > 0) {
+                    try {
+                        Thread.sleep(demoDelayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Sandbox interrupted due to worker shutdown or crash", ie);
+                    }
+                }
 
                 TestRunResult runResult = runSingleTest(lang, sandboxDir, tc.getInputData(), timeLimitMs);
                 maxExecTime = Math.max(maxExecTime, runResult.executionTimeMs);

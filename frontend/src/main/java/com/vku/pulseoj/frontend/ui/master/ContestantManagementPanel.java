@@ -37,9 +37,9 @@ public class ContestantManagementPanel extends JPanel {
     private final JTextField txtUsername = new JTextField(15);
     private final JPasswordField txtPassword = new JPasswordField(15);
     private final JTextField txtFullName = new JTextField(15);
-    private final JButton btnCreate = new JButton("➕ Tạo Tài Khoản Thí Sinh");
-    private final JButton btnToggleLock = new JButton("🔒 Khóa / Mở Khóa");
-    private final JButton btnRefresh = new JButton("🔄 Làm Mới Danh Sách");
+    private final JButton btnCreate = new JButton("+ Tạo Tài Khoản Thí Sinh");
+    private final JButton btnToggleLock = new JButton("■ Khóa / Mở Khóa");
+    private final JButton btnRefresh = new JButton("► Làm Mới Danh Sách");
 
     public ContestantManagementPanel(MasterBackendController controller) {
         this.controller = controller;
@@ -151,7 +151,7 @@ public class ContestantManagementPanel extends JPanel {
                             c.getCreatedAt() != null ? c.getCreatedAt().toString() : "N/A"
                     });
                 }
-                lblStats.setText(String.format("Tổng số thí sinh: %d | 🟢 Đang hoạt động: %d | 🔴 Bị khóa: %d",
+                lblStats.setText(String.format("Tổng số thí sinh: %d  |  ● Đang hoạt động: %d  |  ● Bị khóa: %d",
                         contestants.size(), activeCount, lockedCount));
             });
         });
@@ -163,7 +163,7 @@ public class ContestantManagementPanel extends JPanel {
         String fullName = txtFullName.getText().trim();
 
         if (username.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all fields.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ Tên đăng nhập, Mật khẩu và Họ tên.", "Thiếu Thông Tin", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -176,13 +176,13 @@ public class ContestantManagementPanel extends JPanel {
                     txtPassword.setText("");
                     txtFullName.setText("");
                     btnCreate.setEnabled(true);
-                    JOptionPane.showMessageDialog(this, "Contestant created successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Tạo tài khoản thí sinh thành công!", "Thành Công", JOptionPane.INFORMATION_MESSAGE);
                     refreshTableAsync();
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
                     btnCreate.setEnabled(true);
-                    JOptionPane.showMessageDialog(this, "Failed to create contestant: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Không thể tạo tài khoản: " + ex.getMessage(), "Lỗi Hệ Thống", JOptionPane.ERROR_MESSAGE);
                 });
             }
         });
@@ -191,7 +191,7 @@ public class ContestantManagementPanel extends JPanel {
     private void toggleLockAction() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this, "Select a contestant from the table first.", "Note", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một thí sinh trong bảng trước.", "Thông Báo", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
